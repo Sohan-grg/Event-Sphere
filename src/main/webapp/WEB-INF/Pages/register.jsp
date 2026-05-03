@@ -7,9 +7,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EventSphere – Create Account</title>
-    <link rel="stylesheet" href="CSS/register.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/CSS/register.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -29,9 +30,9 @@
                     <circle cx="200" cy="200" r="140" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
                     <circle cx="200" cy="200" r="90"  stroke="white" stroke-opacity="0.05" stroke-width="1"/>
                     <text x="50%" y="46%" dominant-baseline="middle" text-anchor="middle"
-                          font-size="52" font-family="Syne" fill="white" fill-opacity="0.06" font-weight="800">cafe</text>
+                          font-size="52" font-family="Outfit" fill="white" fill-opacity="0.06" font-weight="800">cafe</text>
                     <text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle"
-                          font-size="38" font-family="Syne" fill="white" fill-opacity="0.06" font-weight="800">NETWORK</text>
+                          font-size="38" font-family="Outfit" fill="white" fill-opacity="0.06" font-weight="800">NETWORK</text>
                 </svg>
             </div>
 
@@ -70,7 +71,7 @@
                 </div>
             </c:if>
 
-            <form action="register" method="post" novalidate>
+            <form action="${pageContext.request.contextPath}/register" method="post" novalidate>
                 <!-- CSRF Token -->
                 <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}"/>
 

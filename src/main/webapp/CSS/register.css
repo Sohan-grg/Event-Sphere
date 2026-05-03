@@ -17,8 +17,8 @@
     --radius-input: 14px;
     --radius-btn:  50px;
     --shadow-card: 0 32px 80px rgba(0,0,0,.14), 0 8px 24px rgba(0,0,0,.07);
-    --font-display: 'Syne', sans-serif;
-    --font-body:    'DM Sans', sans-serif;
+    --font-display: 'Outfit', sans-serif;
+    --font-body:    'Inter', sans-serif;
     --transition:   .22s cubic-bezier(.4,0,.2,1);
 }
 

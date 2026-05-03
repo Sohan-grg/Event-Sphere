@@ -1,63 +1,77 @@
 package controller;
 
+import exception.DuplicateAccountException;
+import exception.ValidationException;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import jakarta.servlet.RequestDispatcher;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import config.DatabaseConfig;
+import service.UserService;
+
 import java.io.IOException;
+import java.sql.SQLException;
 
 @WebServlet("/register")
 public class RegisterController extends HttpServlet {
-    private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/Pages/register.jsp");
-        rd.forward(request, response);
+    private static final long serialVersionUID = 1L;
+    private static final String REGISTER_JSP = "/WEB-INF/Pages/register.jsp";
+
+    private final UserService userService = new UserService();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.getRequestDispatcher(REGISTER_JSP).forward(request, response);
     }
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
 
-        // Get form parameters
         String fullName = request.getParameter("fullName");
-        String email = request.getParameter("email");
+        String email    = request.getParameter("email");
         String password = request.getParameter("password");
-        String role = request.getParameter("role");
-
-        // Basic validation to ensure no fields are left empty
-        if (fullName == null || email == null || password == null || role == null) {
-            request.setAttribute("error", "Please fill in all the fields.");
-            RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/Pages/register.jsp");
-            rd.forward(request, response);
-            return;
-        }
+        String role     = request.getParameter("role");
+        String terms    = request.getParameter("terms");
 
         try {
-            // Establish database connection
-            Connection conn = DatabaseConfig.getConnection();
+            if (terms == null || !"true".equalsIgnoreCase(terms)) {
+                throw new ValidationException(
+                        "You must accept the Terms of Service to register.");
+            }
 
-            // SQL query to insert user details into the database
-            String sql = "INSERT INTO User(`FULL NAME`, `EMAIL ADDRESS`, `PASSWORD`, `SELECT ROLE`) VALUES (?, ?, ?, ?)";
-            PreparedStatement ps = conn.prepareStatement(sql);
+            userService.register(fullName, email, password, role);
 
-            ps.setString(1, fullName);
-            ps.setString(2, email);
-            ps.setString(3, password);  // Consider hashing the password before storing
-            ps.setString(4, role);
+            HttpSession session = request.getSession();
+            session.setAttribute("successMessage",
+                    "Registration successful! Please log in.");
+            response.sendRedirect(request.getContextPath() + "/login");
 
-            // Execute the update
-            ps.executeUpdate();
+        } catch (ValidationException ve) {
+            forwardWithError(request, response, ve.getMessage());
 
-            // Redirect to login page after successful registration
-            response.sendRedirect("login");
+        } catch (DuplicateAccountException dae) {
+            forwardWithError(request, response, dae.getMessage());
+
+        } catch (SQLException se) {
+            se.printStackTrace();
+            forwardWithError(request, response,
+                    "Database error. Please try again in a moment.");
 
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "An error occurred during registration. Please try again.");
-            RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/Pages/register.jsp");
-            rd.forward(request, response);
+            forwardWithError(request, response,
+                    "An unexpected error occurred. Please try again.");
         }
+    }
+
+    private void forwardWithError(HttpServletRequest request,
+                                   HttpServletResponse response,
+                                   String message)
+            throws ServletException, IOException {
+        request.setAttribute("errorMessage", message);
+        RequestDispatcher rd = request.getRequestDispatcher(REGISTER_JSP);
+        rd.forward(request, response);
     }
 }

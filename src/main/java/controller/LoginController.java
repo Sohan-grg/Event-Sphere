@@ -1,73 +1,88 @@
 package controller;
 
+import exception.ValidationException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import config.DatabaseConfig;
+import service.UserService;
+import util.Validator;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.SQLException;
 
 @WebServlet("/login")
 public class LoginController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
+    private static final String LOGIN_JSP = "/WEB-INF/Pages/login.jsp";
 
-    // Show login page
+    /** Lock the account after this many consecutive failures. */
+    private static final int MAX_FAILED_ATTEMPTS = 5;
+
+    private final UserService userService = new UserService();
+
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher("/WEB-INF/Pages/login.jsp").forward(request, response);
+        request.getRequestDispatcher(LOGIN_JSP).forward(request, response);
     }
 
-    // Handle login form submission
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String fullName = request.getParameter("fullName");
+        String fullName = Validator.safeTrim(request.getParameter("fullName"));
         String password = request.getParameter("password");
 
+        HttpSession session = request.getSession();
+
         try {
-            Connection conn = DatabaseConfig.getConnection();
-
-            // ✅ Also fetch ROLE and ID
-            String sql = "SELECT * FROM User WHERE `FULL NAME` = ? AND `PASSWORD` = ?";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, fullName);
-            ps.setString(2, password);
-
-            ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-
-                String role = rs.getString("SELECT ROLE");
-
-                // ✅ CREATE SESSION
-                HttpSession session = request.getSession();
-                session.setAttribute("fullName", fullName);
-                session.setAttribute("role", role);
-
-                // ✅ ROLE-BASED REDIRECT
-                if (role.equalsIgnoreCase("organizer")) {
-                    response.sendRedirect(request.getContextPath() + "/organizerDashboard");
-                } else {
-                    response.sendRedirect(request.getContextPath() + "/home");
-                }
-
-            } else {
-                request.setAttribute("errorMessage", "Invalid name or password.");
-                request.getRequestDispatcher("/WEB-INF/Pages/login.jsp").forward(request, response);
+            if (Validator.isEmpty(fullName) || Validator.isEmpty(password)) {
+                throw new ValidationException("Please enter both name and password.");
             }
 
-            rs.close();
-            ps.close();
-            conn.close();
+            // Check the lock counter held in the session.
+            Integer attempts = (Integer) session.getAttribute("failedAttempts");
+            if (attempts != null && attempts >= MAX_FAILED_ATTEMPTS) {
+                throw new ValidationException(
+                        "Too many failed attempts. Please wait and try again later.");
+            }
+
+            String role = userService.authenticate(fullName, password);
+
+            if (role == null) {
+                int next = (attempts == null ? 0 : attempts) + 1;
+                session.setAttribute("failedAttempts", next);
+                throw new ValidationException("Invalid name or password.");
+            }
+
+            // Success — start a fresh session and clear any failure counter.
+            session.invalidate();
+            session = request.getSession(true);
+            session.setAttribute("fullName", fullName);
+            session.setAttribute("role", role);
+
+            if ("organizer".equalsIgnoreCase(role)) {
+                response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/home");
+            }
+
+        } catch (ValidationException ve) {
+            request.setAttribute("errorMessage", ve.getMessage());
+            request.getRequestDispatcher(LOGIN_JSP).forward(request, response);
+
+        } catch (SQLException se) {
+            se.printStackTrace();
+            request.setAttribute("errorMessage",
+                    "Database error. Please try again later.");
+            request.getRequestDispatcher(LOGIN_JSP).forward(request, response);
 
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("errorMessage", "Error: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/Pages/login.jsp").forward(request, response);
+            request.setAttribute("errorMessage",
+                    "An unexpected error occurred. Please try again.");
+            request.getRequestDispatcher(LOGIN_JSP).forward(request, response);
         }
     }
 }
