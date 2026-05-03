@@ -84,7 +84,7 @@
                             <circle cx="12" cy="7" r="4"/>
                         </svg>
                         <input type="text" id="fullName" name="fullName"
-                               placeholder="Alex Morgan"
+                               placeholder="Full Name"
                                value="<c:out value='${param.fullName}'/>"
                                required autocomplete="name"/>
                     </div>
@@ -102,7 +102,7 @@
                             <path d="m2 7 10 7 10-7"/>
                         </svg>
                         <input type="email" id="email" name="email"
-                               placeholder="alex@eventsphere.com"
+                               placeholder="Name@gmail.com"
                                value="<c:out value='${param.email}'/>"
                                required autocomplete="email"/>
                     </div>
