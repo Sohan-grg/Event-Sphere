@@ -185,6 +185,9 @@ h2 {
     cursor: pointer;
     transition: transform var(--transition), box-shadow var(--transition);
     box-shadow: 0 6px 18px rgba(43,63,216,.28);
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
 }
 
 .btn:hover {
