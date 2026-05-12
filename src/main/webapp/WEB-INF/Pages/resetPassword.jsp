@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="c"   uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"  %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,63 +14,104 @@
 </head>
 <body>
 
-<div class="wrapper">
-    <div class="card">
+<div class="bg-rings bg-rings-left"  aria-hidden="true"></div>
+<div class="bg-rings bg-rings-right" aria-hidden="true"></div>
 
-        <h2>Reset Password</h2>
+<main class="page">
+    <div class="login-card">
+
+        <!-- Brand mark (rocket) -->
+        <div class="brand-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+                <path d="M12 15 9 12a11 11 0 0 1 8-7c0 4-1.59 6.36-4 8-1 .68-3 2-3 2z"/>
+                <path d="M9 12s-3 1-5 2 2 6 2 6"/>
+                <path d="M14.5 3.5c2.5-1 5 0 5 0s.5 2.5-1 5"/>
+            </svg>
+        </div>
 
         <c:choose>
             <c:when test="${invalid}">
-                <p class="subtitle">This reset link is invalid or has expired.</p>
+                <h1 class="brand-title">Link Expired</h1>
+                <p class="brand-sub">This reset link is invalid or has expired.</p>
+
                 <c:if test="${not empty errorMessage}">
-                    <p class="error"><c:out value="${errorMessage}"/></p>
+                    <div class="alert alert-error"><c:out value="${errorMessage}"/></div>
                 </c:if>
-                <a href="${pageContext.request.contextPath}/forgot" class="btn">Request a New Link</a>
-                <div class="login-link">
+
+                <a href="${pageContext.request.contextPath}/forgot" class="btn-signin" style="text-decoration:none">
+                    Request a New Link
+                </a>
+
+                <p class="register-prompt">
                     <a href="${pageContext.request.contextPath}/login">← Back to Login</a>
-                </div>
+                </p>
             </c:when>
 
             <c:otherwise>
-                <p class="subtitle">
-                    Setting a new password for
-                    <strong><c:out value="${email}"/></strong>.
+                <h1 class="brand-title">Reset Password</h1>
+                <p class="brand-sub">
+                    New password for <strong><c:out value="${email}"/></strong>
                 </p>
 
                 <c:if test="${not empty errorMessage}">
-                    <p class="error"><c:out value="${errorMessage}"/></p>
+                    <div class="alert alert-error"><c:out value="${errorMessage}"/></div>
                 </c:if>
 
-                <form action="${pageContext.request.contextPath}/reset" method="post" style="width:100%">
+                <form action="${pageContext.request.contextPath}/reset" method="post" class="login-form" novalidate>
                     <input type="hidden" name="token" value="<c:out value='${token}'/>"/>
 
-                    <div class="input-box">
-                        <label for="password">New Password</label>
-                        <input type="password" id="password" name="password"
-                               placeholder="At least 6 chars · letter + digit"
-                               required minlength="6" maxlength="60"/>
+                    <div class="field">
+                        <label for="password">NEW PASSWORD</label>
+                        <div class="field-input">
+                            <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <rect x="3" y="11" width="18" height="11" rx="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                            <input type="password" id="password" name="password" required
+                                   placeholder="At least 6 chars · letter + digit"
+                                   minlength="6" maxlength="60"/>
+                        </div>
                     </div>
 
-                    <div class="input-box">
-                        <label for="confirmPassword">Confirm Password</label>
-                        <input type="password" id="confirmPassword" name="confirmPassword"
-                               placeholder="Re-enter password"
-                               required minlength="6" maxlength="60"/>
+                    <div class="field">
+                        <label for="confirmPassword">CONFIRM PASSWORD</label>
+                        <div class="field-input">
+                            <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <rect x="3" y="11" width="18" height="11" rx="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                            <input type="password" id="confirmPassword" name="confirmPassword" required
+                                   placeholder="Re-enter password" minlength="6" maxlength="60"/>
+                        </div>
                     </div>
 
-                    <button type="submit" class="btn">Update Password</button>
+                    <button type="submit" class="btn-signin">
+                        Update Password
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </button>
 
-                    <div class="login-link">
+                    <p class="register-prompt">
                         <a href="${pageContext.request.contextPath}/login">← Back to Login</a>
-                    </div>
+                    </p>
                 </form>
             </c:otherwise>
         </c:choose>
     </div>
-</div>
+</main>
+
+<footer class="login-footer">
+    <span>© <fmt:formatDate value="<%= new java.util.Date() %>" pattern="yyyy"/> EventSphere. All rights reserved.</span>
+    <nav>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Contact Us</a>
+    </nav>
+</footer>
 
 <script>
-    // Light client-side check; the server validates authoritatively.
     document.querySelector('form')?.addEventListener('submit', e => {
         const pw = document.getElementById('password');
         const cf = document.getElementById('confirmPassword');

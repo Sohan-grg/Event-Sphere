@@ -33,12 +33,18 @@ public class LoginController extends HttpServlet {
 
         String fullName = Validator.safeTrim(request.getParameter("fullName"));
         String password = request.getParameter("password");
+        String selRole  = Validator.safeTrim(request.getParameter("role")).toLowerCase();
 
         HttpSession session = request.getSession();
 
         try {
             if (Validator.isEmpty(fullName) || Validator.isEmpty(password)) {
                 throw new ValidationException("Please enter both name and password.");
+            }
+
+            if (Validator.isEmpty(selRole) ||
+                !(selRole.equals("attendee") || selRole.equals("organizer"))) {
+                throw new ValidationException("Please choose an access role.");
             }
 
             // Check the lock counter held in the session.
@@ -56,13 +62,26 @@ public class LoginController extends HttpServlet {
                 throw new ValidationException("Invalid name or password.");
             }
 
+            // ── Role gate ──────────────────────────────────────────────
+            // Organizer tile → must be an organizer account.
+            // Attendee  tile → must NOT be an organizer (covers attendee + vendor).
+            String actualRole = role.trim().toLowerCase();
+            boolean ok =
+                    (selRole.equals("organizer") && actualRole.equals("organizer")) ||
+                    (selRole.equals("attendee")  && !actualRole.equals("organizer"));
+
+            if (!ok) {
+                throw new ValidationException(
+                        "Selected access role doesn't match this account.");
+            }
+
             // Success — start a fresh session and clear any failure counter.
             session.invalidate();
             session = request.getSession(true);
             session.setAttribute("fullName", fullName);
-            session.setAttribute("role", role);
+            session.setAttribute("role", actualRole);
 
-            if ("organizer".equalsIgnoreCase(role)) {
+            if ("organizer".equals(actualRole)) {
                 response.sendRedirect(request.getContextPath() + "/organizerDashboard");
             } else {
                 response.sendRedirect(request.getContextPath() + "/home");
