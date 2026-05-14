@@ -102,10 +102,10 @@ public class organizerDashboardController extends HttpServlet {
         request.getRequestDispatcher(DASHBOARD_JSP).forward(request, response);
     }
 
-    // ── Create event ──────────────────────────────────────────────────────────
+ // ── Create event ──────────────────────────────────────────────────────────
     private void createEvent(HttpServletRequest request,
-                              HttpServletResponse response,
-                              String fullName) throws ServletException, IOException {
+                             HttpServletResponse response,
+                             String fullName) throws ServletException, IOException {
 
         String title       = request.getParameter("title");
         String description = request.getParameter("description");
@@ -116,12 +116,59 @@ public class organizerDashboardController extends HttpServlet {
         String capStr      = request.getParameter("capacity");
         String statusParam = request.getParameter("status"); // "Published" or "Draft"
 
-        if (isEmpty(title)) {
-            request.getSession().setAttribute("errorMessage", "Event title is required.");
+        // ── Validation ──────────────────────────────────────────
+        String error = validateEventFields(title, description, category, location,
+                                            dateStr, priceStr, capStr);
+        if (error != null) {
+            request.getSession().setAttribute("errorMessage", error);
             response.sendRedirect(request.getContextPath() + "/organizerDashboard");
             return;
         }
 
+        Timestamp eventDate;
+        try {
+            eventDate = Timestamp.valueOf(dateStr.replace("T", " ") + ":00");
+        } catch (Exception ex) {
+            request.getSession().setAttribute("errorMessage",
+                    "Invalid event date format.");
+            response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+            return;
+        }
+
+        // Reject past / current dates — event must be in the future
+        if (eventDate.before(new Timestamp(System.currentTimeMillis()))) {
+            request.getSession().setAttribute("errorMessage",
+                    "Event date must be in the future.");
+            response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+            return;
+        }
+
+        BigDecimal price;
+        int        capacity;
+        try {
+            price    = new BigDecimal(priceStr);
+            capacity = Integer.parseInt(capStr);
+        } catch (NumberFormatException nfe) {
+            request.getSession().setAttribute("errorMessage",
+                    "Ticket price and capacity must be valid numbers.");
+            response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+            return;
+        }
+
+        if (price.compareTo(BigDecimal.ZERO) < 0) {
+            request.getSession().setAttribute("errorMessage",
+                    "Ticket price cannot be negative.");
+            response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+            return;
+        }
+        if (capacity < 1) {
+            request.getSession().setAttribute("errorMessage",
+                    "Capacity must be at least 1.");
+            response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+            return;
+        }
+
+        // ── Insert ──────────────────────────────────────────────
         String sql = "INSERT INTO events " +
                      "(organizer_name, title, description, category, location, event_date, ticket_price, capacity, status) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -131,25 +178,26 @@ public class organizerDashboardController extends HttpServlet {
 
             ps.setString(1, fullName);
             ps.setString(2, title.trim());
-            ps.setString(3, isEmpty(description) ? "" : description.trim());
-            ps.setString(4, isEmpty(category)    ? "General" : category.trim());
-            ps.setString(5, isEmpty(location)    ? "" : location.trim());
-            ps.setTimestamp(6, isEmpty(dateStr)  ? null : Timestamp.valueOf(dateStr.replace("T", " ") + ":00"));
-            ps.setBigDecimal(7, isEmpty(priceStr) ? BigDecimal.ZERO : new BigDecimal(priceStr));
-            ps.setInt(8,       isEmpty(capStr)   ? 0 : Integer.parseInt(capStr));
-            ps.setString(9,    isEmpty(statusParam) ? "Draft" : statusParam);
+            ps.setString(3, description.trim());
+            ps.setString(4, category.trim());
+            ps.setString(5, location.trim());
+            ps.setTimestamp(6, eventDate);
+            ps.setBigDecimal(7, price);
+            ps.setInt(8, capacity);
+            ps.setString(9, isEmpty(statusParam) ? "Draft" : statusParam);
 
             ps.executeUpdate();
             request.getSession().setAttribute("successMessage", "Event created successfully!");
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            request.getSession().setAttribute("errorMessage", "Failed to create event: " + ex.getMessage());
+            request.getSession().setAttribute("errorMessage",
+                    "Failed to create event: " + ex.getMessage());
         }
 
         response.sendRedirect(request.getContextPath() + "/organizerDashboard");
     }
-
+    
     // ── Delete event ──────────────────────────────────────────────────────────
     private void deleteEvent(HttpServletRequest request,
                               HttpServletResponse response,
@@ -185,49 +233,89 @@ public class organizerDashboardController extends HttpServlet {
             HttpServletResponse response,
             String fullName) throws IOException {
 
-String idStr       = request.getParameter("id");
-String title       = request.getParameter("title");
-String category    = request.getParameter("category");
-String location    = request.getParameter("location");
-String capStr      = request.getParameter("capacity");
-String priceStr    = request.getParameter("ticketPrice");
-String status = request.getParameter("status");
-if (status == null) {
-    status = "Draft";
-}
+String idStr    = request.getParameter("id");
+String title    = request.getParameter("title");
+String category = request.getParameter("category");
+String location = request.getParameter("location");
+String capStr   = request.getParameter("capacity");
+String priceStr = request.getParameter("ticketPrice");
+String status   = request.getParameter("status");
+if (status == null) status = "Draft";
 
 if (isEmpty(idStr)) {
 response.sendRedirect(request.getContextPath() + "/organizerDashboard");
 return;
 }
 
+// ── Validation ──────────────────────────────────────────
+if (isEmpty(title)) {
+request.getSession().setAttribute("errorMessage", "Event title is required.");
+response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+return;
+}
+if (isEmpty(category)) {
+request.getSession().setAttribute("errorMessage", "Category is required.");
+response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+return;
+}
+if (isEmpty(location)) {
+request.getSession().setAttribute("errorMessage", "Location is required.");
+response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+return;
+}
+
+BigDecimal price;
+int        capacity;
+try {
+price    = isEmpty(priceStr) ? BigDecimal.ZERO : new BigDecimal(priceStr);
+capacity = isEmpty(capStr)   ? 0              : Integer.parseInt(capStr);
+} catch (NumberFormatException nfe) {
+request.getSession().setAttribute("errorMessage",
+   "Price and capacity must be valid numbers.");
+response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+return;
+}
+
+if (price.compareTo(BigDecimal.ZERO) < 0) {
+request.getSession().setAttribute("errorMessage",
+   "Ticket price cannot be negative.");
+response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+return;
+}
+if (capacity < 1) {
+request.getSession().setAttribute("errorMessage",
+   "Capacity must be at least 1.");
+response.sendRedirect(request.getContextPath() + "/organizerDashboard");
+return;
+}
+
+// ── Update ──────────────────────────────────────────────
 String sql = "UPDATE events SET title=?, category=?, location=?, capacity=?, ticket_price=?, status=? " +
-        "WHERE id=? AND organizer_name=?";
+    "WHERE id=? AND organizer_name=?";
 
 try (Connection conn = DatabaseConfig.getConnection();
 PreparedStatement ps = conn.prepareStatement(sql)) {
 
-	ps.setString(1, title);
-	ps.setString(2, category);
-	ps.setString(3, location);
-	ps.setInt(4, isEmpty(capStr) ? 0 : Integer.parseInt(capStr));
-	ps.setBigDecimal(5, isEmpty(priceStr) ? BigDecimal.ZERO : new BigDecimal(priceStr));
-	ps.setString(6, status);  // 
-	ps.setInt(7, Integer.parseInt(idStr));
-	ps.setString(8, fullName);
+ps.setString(1, title.trim());
+ps.setString(2, category.trim());
+ps.setString(3, location.trim());
+ps.setInt(4, capacity);
+ps.setBigDecimal(5, price);
+ps.setString(6, status);
+ps.setInt(7, Integer.parseInt(idStr));
+ps.setString(8, fullName);
 
 ps.executeUpdate();
-
 request.getSession().setAttribute("successMessage", "Event updated!");
 
 } catch (Exception e) {
 e.printStackTrace();
-request.getSession().setAttribute("errorMessage", "Update failed.");
+request.getSession().setAttribute("errorMessage", "Update failed: " + e.getMessage());
 }
 
 response.sendRedirect(request.getContextPath() + "/organizerDashboard");
 }
-
+    
     // ── Map ResultSet row → Event ─────────────────────────────────────────────
     private Event mapRow(ResultSet rs) throws SQLException {
         Event e = new Event();
@@ -249,4 +337,28 @@ response.sendRedirect(request.getContextPath() + "/organizerDashboard");
     }
 
     private boolean isEmpty(String v) { return v == null || v.trim().isEmpty(); }
+    
+    /**
+     * Returns null when all fields are valid, otherwise a friendly error message
+     * for the first missing/invalid field.
+     */
+    private String validateEventFields(String title, String description, String category,
+                                        String location, String dateStr,
+                                        String priceStr, String capStr) {
+        if (isEmpty(title))       return "Event title is required.";
+        if (isEmpty(description)) return "Event description is required.";
+        if (isEmpty(category))    return "Please select a category.";
+        if (isEmpty(location))    return "Event location is required.";
+        if (isEmpty(dateStr))     return "Event date and time are required.";
+        if (isEmpty(priceStr))    return "Ticket price is required (use 0 for free events).";
+        if (isEmpty(capStr))      return "Event capacity is required.";
+
+        if (title.trim().length() < 3 || title.trim().length() > 120) {
+            return "Title must be between 3 and 120 characters.";
+        }
+        if (description.trim().length() < 10) {
+            return "Description must be at least 10 characters.";
+        }
+        return null;
+    }
 }

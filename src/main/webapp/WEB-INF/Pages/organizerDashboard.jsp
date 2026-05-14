@@ -15,9 +15,6 @@
 </head>
 <body>
 
-<%-- ═══════════════════════════════════════════════════════════════
-     LAYOUT
-     ═══════════════════════════════════════════════════════════════ --%>
 <div class="layout">
 
     <%-- ── SIDEBAR ─────────────────────────────────────────────── --%>
@@ -223,7 +220,6 @@
                 </div>
             </div>
 
-            <%-- Stats row --%>
             <div class="mini-stats">
                 <div class="mini-stat">
                     <div class="mini-label">TOTAL REGISTRATIONS</div>
@@ -247,7 +243,6 @@
                 </div>
             </div>
 
-            <%-- Event cards --%>
             <div id="eventCardList">
             <c:forEach var="ev" items="${events}">
             <div class="event-card" data-title="${fn:toLowerCase(ev.title)}">
@@ -319,26 +314,32 @@ onclick="openEditModal(${ev.id}, '${ev.title}', '${ev.category}', '${ev.location
 
                         <div class="field-group">
                             <label>EVENT TITLE</label>
-                            <input type="text" name="title" placeholder="e.g. Global Tech Summit 2024" required/>
+                            
+                            <input type="text" name="title" placeholder="e.g. Global Tech Summit 2024"
+                                   required minlength="3" maxlength="120"/>
                         </div>
 
                         <div class="field-group">
                             <label>DESCRIPTION</label>
+                           
                             <textarea name="description" rows="5"
                                       placeholder="Tell your audience what makes this event special..."
-                                      oninput="updatePreview(this.value)"></textarea>
+                                      oninput="updatePreview(this.value)"
+                                      required minlength="10"></textarea>
                         </div>
 
                         <div class="field-row">
                             <div class="field-group">
                                 <label>DATE &amp; TIME</label>
-                                <input type="datetime-local" name="eventDate"/>
+                                
+                                <input type="datetime-local" name="eventDate" id="eventDate" required/>
                             </div>
                             <div class="field-group">
                                 <label>LOCATION</label>
                                 <div class="input-icon-wrap">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                    <input type="text" name="location" placeholder="Venue name or city"/>
+                               
+                                    <input type="text" name="location" placeholder="Venue name or city" required/>
                                 </div>
                             </div>
                         </div>
@@ -348,21 +349,24 @@ onclick="openEditModal(${ev.id}, '${ev.title}', '${ev.category}', '${ev.location
                                 <label>TICKET PRICE ($)</label>
                                 <div class="input-icon-wrap">
                                     <span class="input-prefix">Rs</span>
-                                    <input type="number" name="ticketPrice" min="0" step="0.01" placeholder="0.00" style="padding-left:28px"/>
+                                   
+                                    <input type="number" name="ticketPrice" min="0" step="0.01" placeholder="0.00"
+                                           required style="padding-left:28px"/>
                                 </div>
                             </div>
                             <div class="field-group">
                                 <label>CAPACITY</label>
                                 <div class="input-icon-wrap">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                                    <input type="number" name="capacity" min="0" placeholder="Max attendees"/>
+                                   
+                                    <input type="number" name="capacity" min="1" placeholder="Max attendees" required/>
                                 </div>
                             </div>
                         </div>
 
                         <div class="field-group">
                             <label>CATEGORY</label>
-                            <select name="category">
+                            <select name="category" required>
                                 <option value="Corporate">Corporate</option>
                                 <option value="Social">Social</option>
                                 <option value="Creative">Creative</option>
@@ -450,32 +454,37 @@ onclick="openEditModal(${ev.id}, '${ev.title}', '${ev.category}', '${ev.location
             <input type="hidden" name="id" id="editId"/>
 
             <div class="form-group">
-                <input type="text" id="editTitle" name="title" required>
+             
+                <input type="text" id="editTitle" name="title" required minlength="3" maxlength="120">
                 <label>Event Title</label>
             </div>
 
             <div class="form-group">
-                <input type="text" id="editCategory" name="category">
+                
+                <input type="text" id="editCategory" name="category" required>
                 <label>Category</label>
             </div>
 
             <div class="form-group">
-                <input type="text" id="editLocation" name="location">
+              
+                <input type="text" id="editLocation" name="location" required>
                 <label>Location</label>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <input type="number" id="editCapacity" name="capacity">
+                    
+                    <input type="number" id="editCapacity" name="capacity" required min="1">
                     <label>Capacity</label>
                 </div>
 
                 <div class="form-group">
-                    <input type="number" id="editPrice" name="ticketPrice">
+                  
+                    <input type="number" id="editPrice" name="ticketPrice" required min="0" step="0.01">
                     <label>Ticket Price</label>
                 </div>
             </div>
-            
+
             <div class="toggle-row">
 
     <span>Draft</span>
@@ -553,20 +562,28 @@ onclick="openEditModal(${ev.id}, '${ev.title}', '${ev.category}', '${ev.location
 
     // ── Edit stub ─────────────────────────────────────────────────
     function openEditModal(id, title, category, location, capacity, price, status) {
-    document.getElementById('editId').value = id;
-    document.getElementById('editTitle').value = title;
-    document.getElementById('editCategory').value = category;
-    document.getElementById('editLocation').value = location;
-    document.getElementById('editCapacity').value = capacity;
-    document.getElementById('editPrice').value = price;
+        document.getElementById('editId').value = id;
+        document.getElementById('editTitle').value = title;
+        document.getElementById('editCategory').value = category;
+        document.getElementById('editLocation').value = location;
+        document.getElementById('editCapacity').value = capacity;
+        document.getElementById('editPrice').value = price;
 
- //  set toggle
-    document.getElementById('statusToggle').checked = (status === 'Published');
- 
-    document.getElementById('editModal').style.display = 'flex';
-}
+        // set toggle
+        document.getElementById('statusToggle').checked = (status === 'Published');
 
-    // Start on My Events view
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    // ── NEW: block past dates on the event-date picker ────────────
+    (function () {
+        var d = new Date();
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        var input = document.getElementById('eventDate');
+        if (input) input.min = d.toISOString().slice(0, 16);
+    })();
+
+    // Start on Dashboard view
     showView('dashboard');
 </script>
 
