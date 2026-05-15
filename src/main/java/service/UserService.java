@@ -21,7 +21,7 @@ public class UserService {
     private static final int RESET_TOKEN_TTL_MINUTES = 15;
 
     public UserService() {
-        ensureResetTable();
+       
     }
 
     // ════════════════════════════════════════════════════════════
@@ -212,23 +212,4 @@ public class UserService {
         return email;
     }
 
-    private void ensureResetTable() {
-        String ddl =
-                "CREATE TABLE IF NOT EXISTS password_resets (" +
-                "  id          INT AUTO_INCREMENT PRIMARY KEY," +
-                "  user_email  VARCHAR(150) NOT NULL," +
-                "  token       VARCHAR(64)  NOT NULL UNIQUE," +
-                "  expires_at  TIMESTAMP    NOT NULL," +
-                "  used        TINYINT(1)   NOT NULL DEFAULT 0," +
-                "  created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP," +
-                "  INDEX idx_email (user_email)," +
-                "  INDEX idx_token (token)" +
-                ")";
-        try (Connection conn = DatabaseConfig.getConnection();
-             Statement st = conn.createStatement()) {
-            st.executeUpdate(ddl);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
 }

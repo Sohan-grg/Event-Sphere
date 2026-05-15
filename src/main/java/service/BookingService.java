@@ -20,7 +20,7 @@ import java.util.List;
 public class BookingService {
 
     public BookingService() {
-        ensureTable();
+        
     }
 
     /**
@@ -240,27 +240,5 @@ public class BookingService {
         }
     }
 
-    /** Creates the bookings table on first use if it doesn't already exist. */
-    private void ensureTable() {
-        String ddl =
-                "CREATE TABLE IF NOT EXISTS bookings (" +
-                "  id INT AUTO_INCREMENT PRIMARY KEY," +
-                "  user_name   VARCHAR(120) NOT NULL," +
-                "  event_id    INT          NOT NULL," +
-                "  quantity    INT          NOT NULL DEFAULT 1," +
-                "  total_price DECIMAL(10,2) NOT NULL DEFAULT 0.00," +
-                "  status      VARCHAR(20)  NOT NULL DEFAULT 'CONFIRMED'," +
-                "  booked_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP," +
-                "  INDEX idx_user (user_name)," +
-                "  INDEX idx_event (event_id)" +
-                ")";
-        try (Connection conn = DatabaseConfig.getConnection();
-             Statement st = conn.createStatement()) {
-            st.executeUpdate(ddl);
-        } catch (Exception ex) {
-            // Non-fatal: the table may already exist or DB may be unreachable;
-            // controllers will surface a meaningful error on the next call.
-            ex.printStackTrace();
-        }
-    }
+
 }

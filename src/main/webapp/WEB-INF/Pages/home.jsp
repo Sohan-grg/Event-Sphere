@@ -191,12 +191,16 @@
                                                 </c:choose>
                                             </div>
                                         </div>
-                                        <c:if test="${not ev.soldOut}">
-                                            <button type="button" class="btn-primary"
-                                                    onclick="openBookModal(${ev.id}, '${fn:replace(ev.title, "'", "\\'")}', ${ev.ticketPrice == null ? 0 : ev.ticketPrice}, ${ev.capacity - ev.ticketsSold})">
-                                                Book Now
-                                            </button>
-                                        </c:if>
+                                       <c:if test="${not ev.soldOut}">
+    <button type="button" class="btn-primary"
+            data-event-id="${ev.id}"
+            data-event-title="<c:out value='${ev.title}'/>"
+            data-event-price="${ev.ticketPrice == null ? 0 : ev.ticketPrice}"
+            data-event-seats="${ev.capacity - ev.ticketsSold}"
+            onclick="bookFromBtn(this)">
+        Book Now
+    </button>
+</c:if>
                                     </div>
                                 </div>
                             </article>
@@ -359,6 +363,14 @@
 
         updateTotal();
         document.getElementById('bookModal').style.display = 'flex';
+    }
+    function bookFromBtn(btn) {
+        openBookModal(
+            parseInt(btn.dataset.eventId, 10),
+            btn.dataset.eventTitle,
+            parseFloat(btn.dataset.eventPrice) || 0,
+            parseInt(btn.dataset.eventSeats, 10) || 0
+        );
     }
 
     function updateTotal() {
